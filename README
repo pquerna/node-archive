@@ -1,0 +1,10 @@
+node-archive - Node.JS Bindings to libarchive
+------
+
+libarchive provides tools for reading and writing tar, cpio, zip, ISO, and other archive formats.
+
+This project provides async bindings to the C library.
+
+More information on libarchive can be found at:
+  <http://code.google.com/p/libarchive/>
+
