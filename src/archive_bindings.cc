@@ -45,7 +45,8 @@ public:
     s_ct->InstanceTemplate()->SetInternalFieldCount(1);
     s_ct->SetClassName(String::NewSymbol("ArchiveReader"));
 
-    NODE_SET_PROTOTYPE_METHOD(s_ct, "open_file", OpenFile);
+    NODE_SET_PROTOTYPE_METHOD(s_ct, "openFile", OpenFile);
+    NODE_SET_PROTOTYPE_METHOD(s_ct, "close", Close);
 
     target->Set(String::NewSymbol("ArchiveReader"),
                 s_ct->GetFunction());
@@ -54,18 +55,15 @@ public:
 protected:
   struct archive *m_arc;
 
-  ArchiveReader() : EventEmitter()
+  ArchiveReader() : EventEmitter(), m_arc(NULL)
   {
-    m_arc = archive_read_new();
-
-    /* TODO: these can dlopen shit. should be doing this in an async thread? */
-    archive_read_support_compression_all(m_arc);
-    archive_read_support_format_all(m_arc);
   }
   
   ~ArchiveReader()
   {
-    archive_read_finish(m_arc);
+    if (m_arc != NULL) {
+      archive_read_finish(m_arc);
+    }
   }
 
   static Handle<Value> New(const Arguments& args)
@@ -88,6 +86,9 @@ protected:
   static int EIO_OpenFile(eio_req *req)
   {
     openfile_baton_t *baton = static_cast<openfile_baton_t *>(req->data);
+
+    archive_read_support_compression_all(baton->ar->m_arc);
+    archive_read_support_format_all(baton->ar->m_arc);
 
     baton->rv = archive_read_open_filename(baton->ar->m_arc,
                                            baton->path.c_str(),
@@ -137,6 +138,9 @@ protected:
     REQ_FUN_ARG(1, cb);
     
     ArchiveReader* ar = ObjectWrap::Unwrap<ArchiveReader>(args.This());
+    if (ar->m_arc == NULL) {
+      ar->m_arc = archive_read_new();
+    }
 
     openfile_baton_t *baton = new openfile_baton_t();
     baton->rv = 0;
@@ -148,6 +152,20 @@ protected:
 
     ev_ref(EV_DEFAULT_UC);
     ar->Ref();
+
+    return Undefined();
+  }
+
+  static Handle<Value> Close(const Arguments& args)
+  {
+    HandleScope scope;
+    
+    ArchiveReader* ar = ObjectWrap::Unwrap<ArchiveReader>(args.This());
+
+    if (ar->m_arc != NULL) {
+      archive_read_finish(ar->m_arc);
+      ar->m_arc = NULL;
+    }
 
     return Undefined();
   }
