@@ -255,7 +255,7 @@ protected:
     else {
       Local<Value> aeargv[1];
       aeargv[0] = External::New(baton->entry);
-      Persistent<Object> ae(ArchiveEntry::s_ct->GetFunction()->NewInstance(1, argv));
+      Persistent<Object> ae(ArchiveEntry::s_ct->GetFunction()->NewInstance(1, aeargv));
       argv[0] = Local<Value>::New(ae);
     }
 
