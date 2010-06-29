@@ -4,7 +4,7 @@ var sys = require('sys');
 
 ar.addListener('ready', function() {
   sys.log('In ready function....');
-  ar.next();
+  ar.nextEntry();
 });
 
 ar.addListener('entry', function(entry) {
@@ -18,7 +18,7 @@ ar.addListener('entry', function(entry) {
   estream.addListener('end', function() { });
 */
   /* TODO: is the right api? */
-  ar.next();
+  ar.nextEntry();
 });
 
 ar.openFile("nofile.tar.gz", function(err){
