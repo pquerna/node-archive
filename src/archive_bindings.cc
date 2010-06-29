@@ -123,7 +123,9 @@ protected:
       FatalException(try_catch);
     }
 
-    baton->ar->Emit(String::New("ready"), 0, NULL);
+    if (!err) {
+      baton->ar->Emit(String::New("ready"), 0, NULL);
+    }
     baton->cb.Dispose();
 
     delete baton;
