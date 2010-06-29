@@ -44,11 +44,10 @@ public:
     s_ct->InstanceTemplate()->SetInternalFieldCount(1);
     s_ct->SetClassName(String::NewSymbol("ArchiveEntry"));
 
-/*
     NODE_SET_PROTOTYPE_METHOD(s_ct, "getPath", GetPath);
     NODE_SET_PROTOTYPE_METHOD(s_ct, "getSize", GetSize);
     NODE_SET_PROTOTYPE_METHOD(s_ct, "getMtime", GetMtime);
-*/
+
     target->Set(String::NewSymbol("ArchiveEntry"),
                 s_ct->GetFunction());
   }
@@ -72,6 +71,35 @@ public:
     ae->Wrap(args.This());
     return args.This();
   }
+
+  static Handle<Value> GetPath(const Arguments& args)
+  {
+    HandleScope scope;
+    ArchiveEntry* ar = ObjectWrap::Unwrap<ArchiveEntry>(args.This());
+
+    Local<String> result = String::New(archive_entry_pathname(ar->m_entry));
+    return scope.Close(result);
+  }
+
+
+  static Handle<Value> GetSize(const Arguments& args)
+  {
+    HandleScope scope;
+    ArchiveEntry* ar = ObjectWrap::Unwrap<ArchiveEntry>(args.This());
+
+    Local<Number> result = Integer::New(archive_entry_size(ar->m_entry));
+    return scope.Close(result);
+  }
+
+  static Handle<Value> GetMtime(const Arguments& args)
+  {
+    HandleScope scope;
+    ArchiveEntry* ar = ObjectWrap::Unwrap<ArchiveEntry>(args.This());
+
+    Local<Number> result = Integer::New(archive_entry_mtime(ar->m_entry));
+    return scope.Close(result);
+  }
+
 };
 
 /* TODO: share baseclass in Archive{Reader,Writer} */
