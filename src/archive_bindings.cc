@@ -110,7 +110,7 @@ protected:
 
     if (baton->rv != ARCHIVE_OK) {
       err = true;
-      Exception::Error(String::New(baton->errstr.c_str()));
+      argv[0] = Exception::Error(String::New(baton->errstr.c_str()));
       fprintf(stderr, "archive error: %s\n", baton->errstr.c_str());
     }
 
