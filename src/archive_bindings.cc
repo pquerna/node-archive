@@ -19,6 +19,12 @@
 #include <node.h>
 #include <node_events.h>
 
+#include <string>
+#include <archive.h>
+#include <archive_entry.h>
+
+#include "archive_helpers.h"
+
 using namespace v8;
 using namespace node;
 
@@ -39,15 +45,27 @@ public:
     s_ct->InstanceTemplate()->SetInternalFieldCount(1);
     s_ct->SetClassName(String::NewSymbol("ArchiveReader"));
 
-    NODE_SET_PROTOTYPE_METHOD(constructor_template, "open_file", OpenFile);
+    NODE_SET_PROTOTYPE_METHOD(s_ct, "open_file", OpenFile);
 
     target->Set(String::NewSymbol("ArchiveReader"),
-                constructor_template->GetFunction());
+                s_ct->GetFunction());
   }
 
 protected:
+  struct archive *m_arc;
+
   ArchiveReader() : EventEmitter()
   {
+    m_arc = archive_read_new();
+
+    /* TODO: these can dlopen shit. should be doing this in an async thread? */
+    archive_read_support_compression_all(m_arc);
+    archive_read_support_format_all(m_arc);
+  }
+  
+  ~ArchiveReader()
+  {
+    archive_read_finish(m_arc);
   }
 
   static Handle<Value> New(const Arguments& args)
@@ -58,9 +76,80 @@ protected:
     return args.This();
   }
 
-  /* TODO: EIO stuff */
-  static Handle<Value> OpenFile(const Arguments& args) {
+  typedef struct openfile_baton_t {
+    int rv;
+    std::string errstr;
+    std::string path;
+    /* TODO: refcount this? */
+    ArchiveReader *ar;
+    Persistent<Function> cb;
+  } openfile_baton_t;
+
+  static int EIO_OpenFile(eio_req *req)
+  {
+    openfile_baton_t *baton = static_cast<openfile_baton_t *>(req->data);
+
+    baton->rv = archive_read_open_filename(baton->ar->m_arc,
+                                           baton->path.c_str(),
+                                           10240);
+    if (baton->rv != ARCHIVE_OK) {
+      baton->errstr = archive_error_string(baton->ar->m_arc);
+    }
+
+    return 0;
+  }
+
+  static int EIO_AfterOpenFile(eio_req *req)
+  {
     HandleScope scope;
+    ev_unref(EV_DEFAULT_UC);
+    openfile_baton_t *baton = static_cast<openfile_baton_t *>(req->data);
+
+    Local<Value> argv[1];
+    bool err = false;
+
+    if (baton->rv != ARCHIVE_OK) {
+      err = true;
+      Exception::Error(String::New(baton->errstr.c_str()));
+      fprintf(stderr, "archive error: %s\n", baton->errstr.c_str());
+    }
+
+    TryCatch try_catch;
+
+    baton->ar->Unref();
+    baton->cb->Call(Context::GetCurrent()->Global(), err ? 1 : 0, argv);
+
+    if (try_catch.HasCaught()) {
+      FatalException(try_catch);
+    }
+
+    baton->ar->Emit(String::New("ready"), 0, NULL);
+    baton->cb.Dispose();
+
+    delete baton;
+    return 0;
+  }
+
+  static Handle<Value> OpenFile(const Arguments& args)
+  {
+    HandleScope scope;
+
+    REQ_STR_ARG(0, filename);
+    REQ_FUN_ARG(1, cb);
+    
+    ArchiveReader* ar = ObjectWrap::Unwrap<ArchiveReader>(args.This());
+
+    openfile_baton_t *baton = new openfile_baton_t();
+    baton->rv = 0;
+    baton->path = *filename;
+    baton->cb = Persistent<Function>::New(cb);
+    baton->ar = ar;
+
+    eio_custom(EIO_OpenFile, EIO_PRI_DEFAULT, EIO_AfterOpenFile, baton);
+
+    ev_ref(EV_DEFAULT_UC);
+    ar->Ref();
+
     return Undefined();
   }
 };
