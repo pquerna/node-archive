@@ -1,0 +1,10 @@
+{ "name" : "node-archive"
+, "description" : "MySQL binding for Node.js"
+, "version" : "0.1.0"
+, "contributors" : [ "Paul Querna <pquerna@apache.org>" ]
+, "repository" :
+  { "type" : "git"
+  , "url" : "http://github.com/pquerna/node-archive"
+  }
+, "main" : "archive"
+}
