@@ -9,7 +9,7 @@ var archive = require('archive');
 
 var ar = new archive.ArchiveReader();
 
-var buf = new Buffer(8000);
+var buf = new Buffer(1600);
 
 ar.addListener('ready', function() {
   sys.log('In ready function....');
@@ -49,7 +49,7 @@ ar.addListener('entry', function(entry) {
   });
 });
 
-ar.openFile("nofile.tar.gz", function(err){
+ar.openFile(path.join(root, "nofile.tar.gz"), function(err){
   if (err) {
     sys.log(err);
   }
