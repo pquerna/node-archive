@@ -1,7 +1,13 @@
-var ab = require('./archive_bindings');
-var ar = new ab.ArchiveReader();
+var path = require('path');
+var root = path.dirname(__filename);
+require.paths.unshift(path.join(root, '../build/default'));
+require.paths.unshift(path.join(root, '../lib'));
+
 var sys = require('sys');
 var Buffer = require('buffer').Buffer;
+var archive = require('archive');
+
+var ar = new archive.ArchiveReader();
 
 var buf = new Buffer(8000);
 
@@ -48,4 +54,5 @@ ar.openFile("nofile.tar.gz", function(err){
     sys.log(err);
   }
 });
+
 
