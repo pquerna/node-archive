@@ -45,7 +45,7 @@ public:
     s_ct->InstanceTemplate()->SetInternalFieldCount(1);
     s_ct->SetClassName(String::NewSymbol("ArchiveEntry"));
 
-    NODE_SET_PROTOTYPE_METHOD(s_ct, "read", Read);
+    NODE_SET_PROTOTYPE_METHOD(s_ct, "readAll", Read);
 
     /* Attributes */
     NODE_SET_PROTOTYPE_METHOD(s_ct, "getPath", GetPath);

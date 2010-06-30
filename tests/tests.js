@@ -20,23 +20,6 @@ ar.addListener('entry', function(entry) {
   sys.log('path: '+ entry.getPath());
   sys.log('    size: '+ entry.getSize());
   sys.log('    mtime: '+ entry.getMtime());
-  function reader(length, err) {
-    if (!err) {
-      if (length === 0) {
-        entry.emit('end');
-      }
-      else {
-        var b = buf.slice(0, length);
-        entry.emit('data', b);
-        entry.read(buf, reader);
-      }
-    }
-    else {
-      sys.log(err);
-      entry.emit('end');
-    }
-  }
-  entry.read(buf, reader);
 
   entry.addListener('data', function(data) { 
     sys.log("got data of length: "+ data.length);
@@ -47,6 +30,8 @@ ar.addListener('entry', function(entry) {
       ar.nextEntry();
     });
   });
+
+  entry.read(buf);
 });
 
 ar.openFile(path.join(root, "test.tar.gz"), function(err){
